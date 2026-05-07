@@ -8,21 +8,21 @@
 |------|------|
 | 上传实拍图 | 您家里的现状照片，尽量与效果图视角接近。 |
 | 上传效果图 | 喜欢的设计参考（网络图、设计师稿均可）。 |
-| 生成预览 | 服务器调用 **Replicate** 上的 **FLUX.1 Kontext [max]**，以实拍图为底图做「可按文字指令编辑」的生成。 |
+| 生成预览 | 默认可调用 **Replicate（Flux Kontext）**；也可切换为 **火山方舟 Seedream** 图生图（见下文环境变量）。 |
 
 ## 如何尽量满足「不改格局、保留光线」
 
 纯软件无法像测量仪器一样保证毫米级不变，本项目通过两层手段**约束模型倾向**：
 
 1. **提示词硬约束**：在服务端拼接英文指令，要求保留墙体/洞口/相机视角，并尽量保留原图光照与曝光。
-2. **效果图语义**：若配置了 **OpenAI API**，会先用 `gpt-4o-mini` **阅读效果图**并生成简短英文材质/配色描述，再与您在表单里写的中文说明合并，交给 Kontext，减少「只 upload 一张图却说不清要什么」的情况。
+2. **效果图语义**：若配置了 **多模态大模型**（OpenAI `gpt-4o-mini` 或 **DeepSeek** 等，见 `.env.example`），会先用其 **阅读效果图**并生成简短英文材质/配色描述，再与您在表单里写的中文说明合并，减少「只 upload 一张图却说不清要什么」的情况。
 
 > **说明**：当前管线没有直接把两张图同时「像素对齐」融合进单一扩散模型；效果图通过「文字描述」间接影响生成。若自动描述不理想，请务必备注框里写清需求。
 
 ## 环境要求
 
 - [Node.js](https://nodejs.org/) 18 或以上  
-- 可访问互联网的机器（需调用 Replicate，可选 OpenAI）
+- 可访问互联网的机器（需调用 Replicate 或火山方舟等图像 API，可选多模态读图 API）
 
 ## 快速开始
 
@@ -32,9 +32,12 @@
    npm install
    ```
 
-2. **配置密钥**：复制 `.env.example` 为 `.env`，填入 `REPLICATE_API_TOKEN`（必填）。  
-   - 获取地址：<https://replicate.com/account/api-tokens>  
-   - 可选：填入 `OPENAI_API_KEY`，用于从效果图自动生成英文描述（<https://platform.openai.com/api-keys>）。
+2. **配置密钥**：复制 `.env.example` 为 `.env`，按你实际用的平台填写（**变量名和平台要一致，光把 Key 填进旧名字里不会自动换平台**）：
+
+| 你要用 | 必设 | 说明 |
+|--------|------|------|
+| Replicate + OpenAI 读图 | `IMAGE_PROVIDER=replicate`，`REPLICATE_API_TOKEN` | 读图可配 `OPENAI_API_KEY` + 默认 `LLM_VISION_MODEL=gpt-4o-mini` |
+| 火山 Seedream + DeepSeek 读图 | `IMAGE_PROVIDER=seedream`，`SEEDREAM_API_KEY`（或 Key 只写在 `REPLICATE_API_TOKEN` 时**必须**设 `IMAGE_PROVIDER=seedream`） | 读图：`LLM_PROVIDER=deepseek`，Key 放在 `OPENAI_API_KEY` 或 `DEEPSEEK_API_KEY` |
 
 3. **启动服务**：
 
@@ -50,15 +53,94 @@
 
 ### 方式 A：部署到 Render（推荐，免费 HTTPS）
 
-适合长期使用：得到一个形如 **`https://zhuangxiu-effect-preview.onrender.com`** 的地址（名称可在控制台修改）。
+**Render 是什么？** 可以理解成：租一台「一直开着的网上电脑」帮你跑这个网站，并免费送你一个以 **`onrender.com`** 结尾的 **https 链接**，别人在浏览器里输入就能打开。
 
-1. 把本项目推到 **GitHub / GitLab** 私有或公开仓库均可。  
-2. 打开 [Render](https://render.com/)，注册并连接仓库。  
-3. 选择 **New → Blueprint**，选中仓库；Render 会读取根目录的 **`render.yaml`**。  
-4. 在控制台为 **`REPLICATE_API_TOKEN`**（必填）和可选的 **`OPENAI_API_KEY`** 填入密钥（勾选 Secret）。  
-5. 部署完成后，在服务的 **URL** 一栏复制链接发给他人即可。
+**第二步到底在干什么？** 一句话：在 Render 里**登录 → 让 Render 能读你的 GitHub 仓库 → 用仓库里的 `render.yaml` 自动建网站 → 填上 API 密钥 → 等它装完，复制它给你的网址。下面按屏幕上的英文按钮，一步步写清楚（适合完全没做过的人跟着点）。
 
-> 免费实例在无访问时会休眠，首次打开可能需要几十秒唤醒。
+#### 0. 前提
+
+- 代码已经在 **GitHub** 上（您已完成）。  
+- 准备好 **Replicate** 的密钥：[Replicate API Tokens](https://replicate.com/account/api-tokens)（没有就先注册 Replicate，再复制 Token）。
+
+#### 1. 打开 Render 并注册
+
+1. 浏览器打开：**https://render.com/**  
+2. 点 **Get Started for Free** 或 **Sign Up**，用 **GitHub 账号登录**（推荐，后面一步少很多麻烦）。
+
+#### 2. 允许 Render 访问你的 GitHub（「连接仓库」）
+
+1. 登录后进入 **Dashboard**（控制台首页）。  
+2. 若提示 **Connect GitHub** / **Authorize Render**，按提示点同意，让 Render 能**看到你有哪些仓库**。  
+3. 若问「给哪些仓库权限」，至少要包含你放本项目的那个仓库（可以选 **All repositories** 或 **Only select repositories** 里勾选你的项目）。
+
+> 这就是之前文档里说的「注册并连接仓库」：**不是**把代码再传一遍，而是**授权 Render 从 GitHub 拉代码**。
+
+#### 3. 用 Blueprint 部署（推荐：自动读 `render.yaml`）
+
+1. 在 Dashboard 左上角点 **New +**（或 **New**）。  
+2. 选 **Blueprint**（蓝图 = 按仓库里的配置文件自动搭服务）。  
+3. **Connect a repository**：选中你推送本项目的 **GitHub 仓库**。  
+4. **Branch** 一般选 **`main`**（若你默认分支是 `master` 就选 `master`）。  
+5. **Blueprint file** 保持默认 **`render.yaml`**（本仓库根目录已有此文件）。  
+6. 点 **Apply**（应用）。
+
+#### 4. 填环境变量（密钥）
+
+应用后会出现环境变量表单，至少填：
+
+| 名字（必须一模一样） | 要不要填 | 去哪里拿 |
+|----------------------|----------|----------|
+| **`REPLICATE_API_TOKEN`** | **必填** | [replicate.com/account/api-tokens](https://replicate.com/account/api-tokens) |
+| **`OPENAI_API_KEY`** | 可选 | 不配也能用，但「自动读效果图」会没有；要配去 [OpenAI API Keys](https://platform.openai.com/api-keys) |
+
+- 值粘贴你的 Token 即可。  
+- 若有 **Secret** / **Encrypt** 选项，勾选上，避免在页面上明文显示。
+
+#### 5. 开始部署并拿链接
+
+1. 点 **Create New Resources**（或类似「创建」按钮）。  
+2. 等待 **Building** / **Deploying** 变绿或显示 **Live**（可能要几分钟）。  
+3. 点进这个 **Web Service**，页面上方会有 **URL**，形如 **`https://xxxxx.onrender.com`**。  
+4. 用浏览器打开这个地址，能进上传页面，就说明成功；**这个 https 地址就是可分享链接**。
+
+> 免费版一段时间没人访问会「休眠」，朋友第一次打开可能要等 **30 秒～1 分钟** 唤醒，属正常现象。
+
+#### 若找不到 Blueprint：用手动建 Web Service（效果相同）
+
+1. **New +** → **Web Service**。  
+2. 连接**同一个 GitHub 仓库**，分支选 `main` 或 `master`。  
+3. **Runtime**：**Node**。  
+4. **Build Command**：`npm install`  
+5. **Start Command**：`npm start`  
+6. **Environment** 里添加 **`REPLICATE_API_TOKEN`**（必填），可选 **`OPENAI_API_KEY`**。  
+7. 创建并等待部署完成，同样复制页面上的 **URL** 即可。
+
+### 方式 A-2：部署到 Railway
+
+与 Render 类似，也是连 GitHub 后自动构建；本仓库的 **`package.json` 里已有 `npm start`**，一般**不用**再改启动命令。若你已在 Railway 上部署成功，请按下面核对即可。
+
+1. **环境变量**  
+   进入该服务的 **Variables**（变量）页，按你实际用的平台添加（**不要**把 Seedream 的 Key 只填在 `REPLICATE_API_TOKEN` 里却不改 `IMAGE_PROVIDER`，程序会仍按 Replicate 去调，必失败）：
+
+   - 使用 **Replicate 出图**：`IMAGE_PROVIDER=replicate`，`REPLICATE_API_TOKEN`（[Replicate](https://replicate.com/account/api-tokens)）。  
+   - 使用 **火山方舟 Seedream 出图**：`IMAGE_PROVIDER=seedream`，`SEEDREAM_API_KEY`（或把 Key 放在 `REPLICATE_API_TOKEN` 时**必须**同时设 `IMAGE_PROVIDER=seedream`）。  
+   - 需要 **读效果图** 时：若用 **OpenAI**，设 `OPENAI_API_KEY`；若用 **DeepSeek**，可设 `DEEPSEEK_API_KEY` 或把 Key 写在 `OPENAI_API_KEY` 里，并**至少**加之一：`LLM_PROVIDER=deepseek` 或 `LLM_BASE_URL=https://api.deepseek.com/v1` 或 `USE_DEEPSEEK_LLM=1`。  
+   - 不配读图时，用户必须在页面里**手动写**「风格与细节说明」。
+
+   保存后 Railway 通常会**自动重新部署**。
+
+2. **公网访问地址（可分享的 https 链接）**  
+   在服务里打开 **Settings** → **Networking**（或 **Generate Domain** / 「生成域名」），为 Web 服务**启用公开域名**。  
+   生成后会得到形如 **`https://xxxx.up.railway.app`** 的地址，**这就是给别人用的链接**。  
+   若部署完打不开，多半是还没生成域名，或部署失败（看 **Deployments** 里的日志）。
+
+3. **自检**  
+   浏览器访问：**你的域名 `/api/health`**。  
+   - `imageConfigured` 应为 **`true`**，且 `imageProvider` 为 **`replicate`** 或 **`seedream`**（与你配置一致）。  
+   - 若用了读图，`llmConfigured` 应为 **`true`**。  
+   再回到首页即可上传测试。
+
+> Railway 按用量计费，请以 [Railway 定价说明](https://railway.app/pricing) 为准；测试阶段可关注控制台用量。
 
 ### 方式 B：Docker 部署到任意云平台
 
