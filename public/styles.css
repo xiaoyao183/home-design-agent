@@ -1,0 +1,333 @@
+/* ========== 全局：字体与浅色暖色装修主题 ========== */
+:root {
+  /* 主背景米色，贴近家装展示站常见气质 */
+  --bg: #f6f1ea;
+  /* 卡片白 */
+  --card: #ffffff;
+  /* 主文字深棕 */
+  --text: #2b241c;
+  /* 次要说明文字 */
+  --muted: #6b5f54;
+  /* 品牌强调色：陶土橙 */
+  --accent: #c45c3e;
+  --accent-hover: #a84d33;
+  /* 细边框 */
+  --border: #e3d8cd;
+  --radius: 14px;
+  --shadow: 0 12px 40px rgba(43, 36, 28, 0.08);
+}
+
+/* 盒模型统一，避免宽度计算意外撑破布局 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 页面根元素：背景与默认文字色 */
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+/* body 使用 Flex 列布局，保证 footer 贴底观感（内容少时也舒适） */
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 页眉：固定浅色顶栏 */
+.site-header {
+  padding: 1rem 1.25rem;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* 页眉内层：Flex 两端对齐标题与状态徽标 */
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* 站点标题 */
+.site-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+/* 副标题说明站点用途 */
+.site-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* API 状态小标签容器 */
+.status-pill-wrap {
+  display: flex;
+  align-items: center;
+}
+
+/* 圆角状态胶囊 */
+.status-pill {
+  font-size: 0.8rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #faf7f3;
+  color: var(--muted);
+}
+
+/* 已配置 Replicate 时的强调样式 */
+.status-pill.ok {
+  border-color: #b8d4a8;
+  background: #eef6e8;
+  color: #3d5c2e;
+}
+
+/* 主内容区：占据剩余高度 */
+main.layout-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 2.5rem;
+}
+
+/* 简介段落 */
+.lead {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+  max-width: 62ch;
+}
+
+/* 约束提示列表 */
+.constraints {
+  margin: 0 0 1.5rem;
+  padding-left: 1.25rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+/* Grid：大屏双列，小屏单列 */
+.panel-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 900px) {
+  .panel-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+/* 通用卡片容器 */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+/* 卡片标题 */
+.card h2 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+
+/* 表单纵向堆叠字段 */
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* 单个字段块 */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* 标签文字 */
+.field label {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+/* 辅助说明小号字 */
+.hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+/* 文件选择控件占满宽度 */
+.field input[type="file"] {
+  width: 100%;
+  font-size: 0.88rem;
+}
+
+/* 多行文本框 */
+.field textarea {
+  width: 100%;
+  min-height: 88px;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font: inherit;
+  resize: vertical;
+  background: #fffdfb;
+}
+
+/* 主操作按钮 */
+.btn-primary {
+  appearance: none;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--accent);
+  color: #fff;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+/* 按钮悬停 */
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+/* 按钮按下微缩放反馈 */
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* 禁用态：降低透明度 */
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* 双列预览：实拍 / 效果缩略图 */
+.preview-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* 预览块 */
+.preview-box {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #faf7f3;
+}
+
+/* 预览块说明 */
+.preview-box span.placeholder {
+  font-size: 0.82rem;
+  color: var(--muted);
+  padding: 0.5rem;
+  text-align: center;
+}
+
+/* 预览图片自适应裁剪 */
+.preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 结果区占位 */
+.result-frame {
+  min-height: 240px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #faf7f3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* 结果图宽度自适应 */
+.result-frame img {
+  width: 100%;
+  height: auto;
+  display: block;
+  vertical-align: middle;
+}
+
+/* 结果区占位文字 */
+.result-placeholder {
+  color: var(--muted);
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.92rem;
+}
+
+/* 加载中遮罩文案 */
+.loading-msg {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
+/* 错误信息 */
+.error-msg {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  color: #b00020;
+}
+
+/* 可折叠技术详情（展示后端拼接的 prompt） */
+details.tech {
+  margin-top: 1rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+/* details 内 pre 换行 */
+details.tech pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #f3ebe3;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  max-height: 220px;
+  overflow: auto;
+}
+
+/* 页脚低调分隔 */
+.site-footer {
+  padding: 1rem 1.25rem 2rem;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  background: var(--card);
+}

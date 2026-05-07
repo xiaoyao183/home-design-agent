@@ -1,0 +1,18 @@
+# Render Blueprint：连接本仓库后在控制台一键部署，自动生成 https://你的服务名.onrender.com
+# 文档：https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: zhuangxiu-effect-preview
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: REPLICATE_API_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<!-- 声明 HTML5 文档类型 -->
+<html lang="zh-CN">
+  <!-- 文档头部：编码、视口与样式表 -->
+  <head>
+    <!-- 字符编码 UTF-8，保证中文正常显示 -->
+    <meta charset="utf-8" />
+    <!-- 移动端视口：响应式布局必需 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- 页面标题：浏览器标签与收藏夹显示 -->
+    <title>装修落地效果预览 · 实拍图 + 效果图</title>
+    <!-- 引入站点样式 -->
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <!-- 页面主体：顶栏 + 主内容 + 页脚 -->
+  <body>
+    <!-- 站点页眉：标题与服务状态 -->
+    <header class="site-header">
+      <!-- 内层容器限制最大宽度并横向排版 -->
+      <div class="header-inner">
+        <!-- 左侧标题组 -->
+        <div>
+          <!-- 主标题 -->
+          <h1 class="site-title">装修落地效果预览</h1>
+          <!-- 副标题说明价值 -->
+          <p class="site-sub">上传实拍与参考效果，快速预览「不改格局、尽量保留光线」的合成示意</p>
+        </div>
+        <!-- 右侧状态徽标 -->
+        <div class="status-pill-wrap">
+          <!-- 由脚本根据 /api/health 更新文案 -->
+          <span id="status-pill" class="status-pill">正在检查服务…</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主布局：说明 + 双栏操作区 -->
+    <main class="layout-main">
+      <!-- 面向非技术用户的简短说明 -->
+      <p class="lead">
+        本工具通过 AI 将「效果图」中的材质、配色与软装意向迁移到您的「实拍图」上，用于装修决策参考；无法替代实地测量与施工图。
+      </p>
+      <!-- 产品约束要点列表 -->
+      <ul class="constraints">
+        <!-- 约束一：格局 -->
+        <li>尽量保持墙体、门窗洞口与相机视角不变（由提示词与模型共同约束）。</li>
+        <!-- 约束二：光线 -->
+        <li>提示词要求保留实拍图的光线方向与明暗关系；实际效果因照片而异。</li>
+        <!-- 约束三：合规 -->
+        <li>请勿上传他人隐私或无权使用的图片。</li>
+      </ul>
+
+      <!-- 双层面板：左侧表单 + 右侧结果 -->
+      <div class="panel-grid">
+        <!-- 左侧卡片：上传与说明 -->
+        <section class="card" aria-labelledby="panel-upload-title">
+          <!-- 区块标题 -->
+          <h2 id="panel-upload-title">1 · 上传图片并生成</h2>
+          <!-- 表单：multipart 提交到后端 -->
+          <form id="upload-form" class="form-stack" action="#" method="post">
+            <!-- 实拍图字段 -->
+            <div class="field">
+              <!-- 实拍图标签 -->
+              <label for="actual-input">房屋实拍图（现状照片）</label>
+              <!-- 辅助说明 -->
+              <p class="hint">建议角度与效果图接近，便于 AI 对齐视觉意图。</p>
+              <!-- 文件选择：name=actual 与后端 multer 字段一致 -->
+              <input id="actual-input" name="actual" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required />
+            </div>
+            <!-- 效果图字段 -->
+            <div class="field">
+              <!-- 效果图标签 -->
+              <label for="effect-input">想要的效果图（参考）</label>
+              <!-- 辅助说明 -->
+              <p class="hint">配置 OpenAI 密钥时，系统会尝试自动读图生成英文描述（可与下方文字叠加）。</p>
+              <!-- 文件选择：name=effect -->
+              <input id="effect-input" name="effect" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required />
+            </div>
+            <!-- 文本补充说明 -->
+            <div class="field">
+              <!-- 文本域标签 -->
+              <label for="notes-input">风格与细节说明（强烈建议填写）</label>
+              <!-- 未配置 OpenAI 时此项为必填语境下的关键输入 -->
+              <textarea
+                id="notes-input"
+                name="notes"
+                placeholder="例：地面改浅色木地板，墙面暖白乳胶漆，沙发改为灰色布艺，保留现有窗户位置与日光照方向。"
+              ></textarea>
+            </div>
+            <!-- 缩略预览行 -->
+            <div class="preview-row" aria-hidden="true">
+              <!-- 实拍预览盒 -->
+              <div id="actual-preview" class="preview-box">
+                <!-- 占位文字 -->
+                <span class="placeholder">实拍预览</span>
+                <!-- 预览图像（初始隐藏） -->
+                <img alt="" hidden />
+              </div>
+              <!-- 效果图预览盒 -->
+              <div id="effect-preview" class="preview-box">
+                <!-- 占位文字 -->
+                <span class="placeholder">效果预览</span>
+                <!-- 预览图像（初始隐藏） -->
+                <img alt="" hidden />
+              </div>
+            </div>
+            <!-- 提交按钮 -->
+            <button id="btn-generate" class="btn-primary" type="submit">生成预览图</button>
+            <!-- 加载提示 -->
+            <p id="loading" class="loading-msg" hidden>生成中，通常需数十秒，请稍候…</p>
+            <!-- 错误展示 -->
+            <p id="error" class="error-msg" role="alert"></p>
+          </form>
+        </section>
+
+        <!-- 右侧卡片：生成结果 -->
+        <section class="card" aria-labelledby="panel-result-title">
+          <!-- 区块标题 -->
+          <h2 id="panel-result-title">2 · 预览结果</h2>
+          <!-- 结果画框 -->
+          <div class="result-frame">
+            <!-- 结果占位说明 -->
+            <p id="result-placeholder" class="result-placeholder">生成后的图片将显示在此处；可右键另存为以便对比。</p>
+            <!-- 结果图像 -->
+            <img id="result-img" alt="AI 合成预览" hidden />
+          </div>
+          <!-- 可折叠：本次使用的完整提示词 -->
+          <details class="tech">
+            <!-- 摘要标题 -->
+            <summary>查看本次发送给模型的完整说明（供进阶用户核对）</summary>
+            <!-- 提示词正文 -->
+            <pre id="prompt-used"></pre>
+          </details>
+        </section>
+      </div>
+    </main>
+
+    <!-- 页脚版权与免责 -->
+    <footer class="site-footer">
+      <!-- 简短免责声明 -->
+      <p>输出仅供参考；户型结构与安全合规请以物业与设计师意见为准。</p>
+    </footer>
+
+    <!-- 前端脚本：预览与健康检查 -->
+    <script src="/app.js" defer></script>
+  </body>
+</html>
