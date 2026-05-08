@@ -38,11 +38,13 @@
     try {
       const r = await fetch(HEALTH_URL);
       const j = await r.json();
-      if (j.replicateConfigured) {
-        el.textContent = "已连接 AI 服务（Replicate）";
+      if (j.imageConfigured) {
+        const providerName = j.imageProvider === "seedream" ? "火山 Seedream" : "Replicate";
+        el.textContent = `已连接 AI 服务（${providerName}）`;
         el.classList.add("ok");
       } else {
-        el.textContent = "未配置 API：请运行后端并设置 REPLICATE_API_TOKEN";
+        const providerName = j.imageProvider === "seedream" ? "SEEDREAM_API_KEY" : "REPLICATE_API_TOKEN";
+        el.textContent = `未配置 API：请运行后端并设置 ${providerName}`;
         el.classList.remove("ok");
       }
     } catch {
