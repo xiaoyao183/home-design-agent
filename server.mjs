@@ -312,15 +312,17 @@ app.post("/api/generate", upload.fields([{ name: "actual", maxCount: 1 }, { name
 
     const actualMime = actualFile.mimetype || "image/jpeg";
     let imageUrl;
+    let promptUsed;
 
     if (imageProvider === "replicate") {
+      promptUsed = styleDescription;
       const actualDataUri = `data:${actualMime};base64,${actualFile.buffer.toString("base64")}`;
       const output = await replicate.run(
         "rocketdigitalai/interior-design-sdxl:81e35652413ea493a9b974936783252989141921be4f145233342d6a753e1a55",
         {
           input: {
             image: actualDataUri,
-            prompt: styleDescription,
+            prompt: promptUsed,
           },
         }
       );
@@ -329,13 +331,13 @@ app.post("/api/generate", upload.fields([{ name: "actual", maxCount: 1 }, { name
         return res.status(500).json({ error: "模型未返回有效图片地址。", raw: output });
       }
     } else {
-      // Fallback or error for seedream, as we are focusing on replicate now
-      return res.status(503).json({ error: "当前配置为 Replicate，但代码逻辑进入了 Seedream 分支。请检查 .env 文件中的 IMAGE_PROVIDER 设置。" });
+      promptUsed = buildEditPrompt(styleDescription);
+      imageUrl = await generateWithSeedream(promptUsed, actualFile.buffer, actualMime);
     }
 
     return res.json({
       imageUrl,
-      promptUsed: prompt,
+      promptUsed: promptUsed,
       autoDescribed,
       imageBackend: imageProvider,
     });
