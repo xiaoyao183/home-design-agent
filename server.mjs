@@ -39,7 +39,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 /** Seedream（火山方舟）默认接口与模型，可在环境变量中覆盖 */
 const SEEDREAM_DEFAULT_URL = "https://ark.cn-beijing.volces.com/api/v3/images/generations";
-const SEEDREAM_DEFAULT_MODEL = "doubao-seedream-4-0-250828";
+const SEEDREAM_DEFAULT_MODEL = "doubao-seedream-5-0-260128";
 
 /** 健康检查 */
 app.get("/api/health", (_req, res) => {
@@ -116,9 +116,11 @@ async function describeEffectWithVision(effectBuffer, mimeType) {
           {
             type: "text",
             text:
-              "Describe this interior design reference image in English only. " +
-              "Focus on: wall colors/materials, flooring, ceiling, furniture style, " +
-              "decor, lighting fixtures. 4–6 short sentences. No people; no camera talk.",
+              '你是一位专业的室内设计师。请分析这张室内设计效果图，并以JSON格式返回你的分析结果。' +
+              'JSON对象必须包含以下两个键：' +
+              '1. "room_type": 字符串，识别房间类型（例如："客厅", "卧室", "厨房", "卫生间"）。' +
+              '2. "style_keywords": 字符串数组，提取5-8个最核心的设计要素、材质和风格关键词（例如：["木色柜子", "不锈钢金属拉手", "柚木色地板", "木色与金属材质", "阿尔托风格"])。' +
+              '请确保返回的是一个格式良好、可以直接被解析的JSON对象，不要包含任何额外的解释或非JSON内容。',
           },
           { type: "image_url", image_url: { url: dataUrl } },
         ],
@@ -143,7 +145,21 @@ async function describeEffectWithVision(effectBuffer, mimeType) {
 
   const j = await r.json();
   const text = j?.choices?.[0]?.message?.content?.trim();
-  return text || null;
+  if (!text) return null;
+
+  try {
+    // The model might return the JSON string inside a markdown code block
+    const jsonString = text.replace(/```json\n?|\n?```/g, "");
+    const parsed = JSON.parse(jsonString);
+    if (parsed && parsed.room_type && Array.isArray(parsed.style_keywords)) {
+        return parsed; // return the parsed object
+    }
+    console.warn("Vision model did not return the expected JSON format.", parsed);
+    return null;
+  } catch (e) {
+    console.error("Failed to parse JSON from Vision model:", text);
+    return null;
+  }
 }
 
 /** 统一解析 Replicate 返回的图片 URL */
@@ -224,17 +240,17 @@ async function generateWithSeedream(prompt, actualBuffer, actualMime) {
 }
 
 function buildEditPrompt(styleDescription) {
-  const desc = styleDescription?.trim() || "modern cozy interior with cohesive palette";
+  const desc = styleDescription?.trim() || "现代舒适的室内设计，色调和谐";
   return [
-    "Edit this interior photograph to match the following design intent:",
+    "请根据以下设计意图编辑这张室内照片：",
     desc,
     "",
-    "Hard constraints:",
-    "- Keep the exact same room layout: walls, openings, windows, doors, and camera viewpoint.",
-    "- Preserve the original photo lighting direction, brightness, shadows, and white balance as much as possible.",
-    "- Do not change perspective, geometry, or room shape.",
-    "- Apply changes mainly through materials, colors, furniture, and decor that fit the space.",
-    "- Photorealistic output suitable for renovation preview.",
+    "硬性约束:",
+    "- 保持完全相同的房间布局：墙壁、洞口、窗户、门和相机视角。",
+    "- 尽可能保留原始照片的光照方向、亮度、阴影和白平衡。",
+    "- 不要改变透视、几何形状或房间形状。",
+    "- 主要通过适合空间的材料、颜色、家具和装饰来应用变更。",
+    "- 生成适合装修预览的逼真照片效果。",
   ].join("\n");
 }
 
@@ -274,9 +290,12 @@ app.post("/api/generate", upload.fields([{ name: "actual", maxCount: 1 }, { name
     if (llm) {
       try {
         const mime = effectFile.mimetype || "image/jpeg";
-        const aiDesc = await describeEffectWithVision(effectFile.buffer, mime);
-        if (aiDesc) {
+        const aiDescObject = await describeEffectWithVision(effectFile.buffer, mime);
+        if (aiDescObject) {
           autoDescribed = true;
+          const keywords = aiDescObject.style_keywords.join(", ");
+          const room = aiDescObject.room_type;
+          const aiDesc = `AI分析效果图：房间是${room}，风格特点是${keywords}。`;
           styleDescription = [notes, aiDesc].filter(Boolean).join("\n\n");
         }
       } catch (err) {
@@ -291,28 +310,27 @@ app.post("/api/generate", upload.fields([{ name: "actual", maxCount: 1 }, { name
       });
     }
 
-    const prompt = buildEditPrompt(styleDescription);
-
     const actualMime = actualFile.mimetype || "image/jpeg";
     let imageUrl;
 
     if (imageProvider === "replicate") {
       const actualDataUri = `data:${actualMime};base64,${actualFile.buffer.toString("base64")}`;
-      const output = await replicate.run("black-forest-labs/flux-kontext-max", {
-        input: {
-          input_image: actualDataUri,
-          prompt,
-          aspect_ratio: "match_input_image",
-          output_format: "png",
-          safety_tolerance: 2,
-        },
-      });
+      const output = await replicate.run(
+        "rocketdigitalai/interior-design-sdxl:81e35652413ea493a9b974936783252989141921be4f145233342d6a753e1a55",
+        {
+          input: {
+            image: actualDataUri,
+            prompt: styleDescription,
+          },
+        }
+      );
       imageUrl = normalizeImageUrl(output);
       if (!imageUrl) {
         return res.status(500).json({ error: "模型未返回有效图片地址。", raw: output });
       }
     } else {
-      imageUrl = await generateWithSeedream(prompt, actualFile.buffer, actualMime);
+      // Fallback or error for seedream, as we are focusing on replicate now
+      return res.status(503).json({ error: "当前配置为 Replicate，但代码逻辑进入了 Seedream 分支。请检查 .env 文件中的 IMAGE_PROVIDER 设置。" });
     }
 
     return res.json({
