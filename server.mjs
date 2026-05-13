@@ -318,11 +318,12 @@ app.post("/api/generate", upload.fields([{ name: "actual", maxCount: 1 }, { name
       promptUsed = styleDescription;
       const actualDataUri = `data:${actualMime};base64,${actualFile.buffer.toString("base64")}`;
       const output = await replicate.run(
-        "rocketdigitalai/interior-design-sdxl:81e35652413ea493a9b974936783252989141921be4f145233342d6a753e1a55",
+        "lucataco/sdxl-controlnet-depth:5e0a5cda895aa23a1aaa1a9a265220097102448e1b4c42b22a3c6d87c12d41a9",
         {
           input: {
             image: actualDataUri,
             prompt: promptUsed,
+            condition_scale: 0.7, // Add a reasonable default for controlnet strength
           },
         }
       );
