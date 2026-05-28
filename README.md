@@ -27,12 +27,13 @@
 
 3. **配置密钥**：
    - 复制项目根目录下的 `.env.example` 文件，并重命名为 `.env`。
-   - 打开 `.env` 文件，填入以下两个密钥：
+   - 设置 `IMAGE_PROVIDER` 并填入对应密钥（详见 `.env.example`）：
 
-     | 环境变量 | 用途 | 获取地址 |
-     | :--- | :--- | :--- |
-     | `REPLICATE_API_TOKEN` | **必需**。用于调用 ControlNet 图像生成模型。 | [replicate.com/account/api-tokens](https://replicate.com/account/api-tokens) |
-     | `DEEPSEEK_API_KEY` | **强烈推荐**。用于 AI 自动分析效果图，大幅提升效果。 | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) |
+     | 环境变量 | 用途 |
+     | :--- | :--- |
+     | `IMAGE_PROVIDER=openai` + `OPENAI_API_KEY` | 使用 [apimart](https://docs.apimart.ai/) 的 gpt-image-2（风格灵感 / 局部修改均可） |
+     | `IMAGE_PROVIDER=replicate` + `REPLICATE_API_TOKEN` | 使用 Replicate ControlNet |
+     | `DEEPSEEK_API_KEY`（可选） | 局部修改时自动分析效果图关键词 |
 
 4. **启动服务**：
    ```bash
@@ -47,4 +48,6 @@
 
 1.  **语义理解**: 用户上传“意向图”后，后端会调用 **DeepSeek-VL** 模型分析该图片，以 JSON 格式返回其“房间类型”和“风格关键词”。
 2.  **指令生成**: 后端将 AI 分析出的关键词与用户在文本框中输入的说明合并，形成最终的风格指令 (Prompt)。
-3.  **可控生成**: 后端调用 **Replicate** 上的 `ControlNet` 模型，将“实拍图”作为空间结构参考，将风格指令作为内容参考，生成一张既保留了原始房间结构、又应用了新风格的效果图。
+3.  **可控生成**: 按 `IMAGE_PROVIDER` 调用 Replicate ControlNet 或 apimart gpt-image-2；apimart 为异步任务，服务端会轮询 `/v1/tasks/{task_id}` 直至返回图片 URL。
+
+> **apimart 注意**：图生图请使用 `image_urls`；任务完成后图片地址在 `data.result.images[0].url[0]`。若生成较慢，可在 `.env` 中调大 `OPENAI_POLL_MAX_RETRIES` 等轮询参数。

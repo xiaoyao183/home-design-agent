@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>测试点击事件</title>
+    <style>
+        .style-card {
+            width: 200px;
+            cursor: pointer;
+            border: 2px solid #ccc;
+            padding: 10px;
+            margin: 10px;
+        }
+        .style-card-image {
+            width: 100%;
+            aspect-ratio: 3/4;
+            background: #eee;
+        }
+        #page-detail {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="gallery">
+        <div class="style-card" data-style="style1">
+            <div class="style-card-image"></div>
+            <div class="style-card-name">测试风格1</div>
+        </div>
+        <div class="style-card" data-style="style2">
+            <div class="style-card-image"></div>
+            <div class="style-card-name">测试风格2</div>
+        </div>
+    </div>
+
+    <div id="page-detail">
+        <h2>详情页面</h2>
+        <p id="detail-content">选择一个风格查看详情</p>
+        <button id="btn-back">返回</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("页面加载完成");
+            
+            const cards = document.querySelectorAll(".style-card");
+            const detailPage = document.getElementById("page-detail");
+            const gallery = document.getElementById("gallery");
+            const detailContent = document.getElementById("detail-content");
+            const btnBack = document.getElementById("btn-back");
+
+            console.log("找到的卡片数量:", cards.length);
+
+            cards.forEach((card, index) => {
+                card.addEventListener("click", () => {
+                    const styleName = card.querySelector(".style-card-name").textContent;
+                    console.log("点击了卡片:", styleName);
+                    
+                    detailContent.textContent = `您选择了: ${styleName}`;
+                    gallery.style.display = "none";
+                    detailPage.style.display = "block";
+                });
+            });
+
+            btnBack.addEventListener("click", () => {
+                gallery.style.display = "block";
+                detailPage.style.display = "none";
+            });
+        });
+    </script>
+</body>
+</html>
